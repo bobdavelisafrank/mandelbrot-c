@@ -1,0 +1,160 @@
+    Send all complaints and love-letters to bodavelisafrank@gmail.com.
+
+    Copyright 2017, Maxwell Powlison. Licensed under the GNU GPL v3.0.
+
+This is a program written as an exercise, which generates Mandelbrot sets. Bugs
+are somewhat to be expected, but if this program REALLY doesn't work in the
+slightest, then send hate mail immediately and I'll get on it.
+
+
+Compiling:
+--------------------------------------------------------------------------------
+
+Compiling should be as simple as ensuring you have GCC, Make, and OpenMP. If you
+need to use a different C compiler, you'll have to edit the Makefile to reflect
+it.
+
+Open a terminal, and change to the directory with the Makefile. Run "make" to
+compile.
+
+    $ make
+
+One can further proceed to run "sudo make install" in order to have the program
+installed to /usr/local/bin. Uninstallation can be done as "sudo make uninstall"
+to have the executable removed.
+
+Running:
+--------------------------------------------------------------------------------
+
+Running this file without any arguments will throw up a generic help menu.
+
+  Usage:
+      mandelbrot [options] width height
+  Available options:
+          -z : Zoom level.
+          -x : Real part of the graph center.
+          -y : Imaginary part of the graph center.
+          -i : Max iteration count.
+          -o : Hue offset.
+          -l : Hue limiter.
+          -m : Low memory mode (write straight to disk).
+          -t : Threadcount (overrides lowmem).
+          -c : Sets a constant brightness value. If set to 0:
+              -b : Maximum brightness (on a scale of 0 to 1).
+              -d : Distribution of light (higher -> more spread out).
+          -h : Invokes this help menu.
+
+In more detail on this menu:
+
+ width,
+ height : These decide the resolution of the image. They are the only required
+          arguments, and do not have a default value.
+          Most modern computers should be able to easily handle a resolution of
+          1920 by 1080, or higher, if no other arguments are given.
+          The primary consequences of raising resolution is memory cost,
+          calculation time, and final image size.
+          Memory usage and final image size are about the same in the default 
+          mode, the size in bytes being 3 * width * height, as the output is
+          uncompressed.
+          Calculation time is proportional to the area of the image. 
+
+ -z     : The zoom multiplier. The larger this number is, the more zoomed in the
+          image is. The smaller this number, the less zoomed in the image is.
+          The default value is 1, and the number is a floating point. Zooming
+          out (which isn't really needed) can be done by setting a value between
+          0 and 1.
+          Zooming in is best done with an exponential scale; setting the number
+          to 10, 100, 1000 or so on.
+          Currently, the precision is limited to double-precision floats, so
+          this has an upper bound not too high up.
+
+ -x, -y : These numbers make up the center of the graph, x + yi. This determines
+          where on the Mandelbrot set the image is centered. The default values
+          for both are 0.
+          The mandelbrot set only covers values of x and y where x*x + y*y > 4,
+          so values between 0 and 2 for either one are fine. The program will
+          not complain if the values are larger.
+
+ -i     : Changes the max iteration count. This mainly effects 3 things, being
+          the color distribution, amount of banding, and calculation time.
+          Low values will have wide color distribution, large amounts of banding
+          (visual jumps between colors), and quick calculation times.
+          High values will have a focused color distribution, low amounts of
+          banding (very smooth color transitions), and high calculation times.
+          The default value is 360, which is slightly on the low side.
+          A value of 1440 seems to eliminate all banding without ruining the
+          color distribution.
+
+ -o     : Changes the hue of the output image, by translating it. Has an initial
+          value of 0, and works on a scale of degrees. The value is a double, so
+          decimal places are accepted.
+
+ -l     : Changes the width of the hue of the image. It has a default value of
+          1, and is made to be set between 0 and 1. Higher values also work, but
+          the image will have a limited, repeating spectrum.
+
+ -m     : Low memory mode. Instead of writing to RAM, the program writes
+          directly to disk. This is incompatible with the (current) 
+          multithreading model.
+          If you have a low iteration count (-i), then this will increase the
+          disk usage straight to the sky, slowing down quite a bit if you have a
+          true single-core computer.
+          High iteration counts make for rarer disk access, so the speed
+          normalizes, and this becomes the same as normal mode with very low
+          memory usage.
+          The size varies a bit, but seems to stays under 1 MiB with this mode.
+
+ -t     : Threadcount. This overrides low-memory mode for threadcounts higher
+          than 1. 
+          For a threadcount of N threads, the image is rendered N rows at a
+          time, which are then interlaced together to produce the final image.
+          This speeds up the program quite a bit, due to the nature of how the 
+          set is calculated. If you have several threads, and enough memory, 
+          setting this flag is very reccomended.
+
+ -c     : Sets a constant brightness level. If set to 1, you get a pure white
+          image. If set to around 0.75, you get a fairly bright image. If set
+          to 0.5, you get a normal image. If set to 0.25, you get a fairly
+          dark image. If set to 0, however, the brightness is set to vary along
+          with the hue.
+
+   -b     : Maximum brightness. Only in effect with a constant brightness of 0.
+            Sets the maximum brightness with which a point can be rendered with.
+            This is similar itself to the constant brightness level (when it is
+            not 0), but should generally be set fairly high (0.75 to 1) when
+            zoomed out, and generally be set normal to low when zoomed in a lot
+            (0.4 to 0.6 ish).
+
+   -d     : Light distribution. Only in effect with a constant brightness of 0.
+            The larger the value, the more spread out the light. The smaller the 
+            value, the more focused the light.
+            When zoomed in quite a lot, this value should be kept small, as you
+            want fairly focused light.
+            Somewhere around 1 to 2 is small, 2 to 4 is quite medium, 4 to 16 is
+            quite large.
+            This relates to the iteration count; as the iteration count rises,
+            this value should rise as well. Play around with it a bit to find
+            a good value.
+
+The program will then repeat back all of the values, and start rendering the
+mandelbrot set to a TARGA image in the program directory. This image format
+isn't widely supported by all image viewers, but is easily recognized by
+programs like the GNU Image Manipulation Program, or ImageMagick's convert tool.
+
+An example of parameters:
+
+    -x -0.745 -y 0.1 -z 512 -i 1440 -l 0.5
+
+This will zoom in onto the point (-0.745) + (0.1)i by a factor of 512, perform
+1440 iterations, and limit the hue to half of the available spectrum. I
+reccomend trying these parameters out.
+
+Another example set:
+
+    -i 5760 -c 0 -d 16 -t 4
+
+This will use the default zoom, perform 5760 iterations, use fairly focused
+light (since the iteration count is high, 16 is a bit small), and use 4 threads. 
+Using this with a high resolution (around 7680 by 4320 or higher) makes for a 
+decent image for zooming into a bit, but the rendering becomes quite heavy on
+resources.
